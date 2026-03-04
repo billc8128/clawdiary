@@ -1,12 +1,17 @@
 {
   "name": "clawreport",
   "private": true,
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "npm run build -w packages/backend",
     "dev": "npm run dev -w packages/backend",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push"
+  },
+  "devDependencies": {
+    "@vercel/node": "^5.6.10"
   }
 }

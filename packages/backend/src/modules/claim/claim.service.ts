@@ -32,7 +32,7 @@ export async function claimClaw(claimCode: string, email: string) {
 
   await db
     .update(claws)
-    .set({ status: "claimed", ownerId: owner.id })
+    .set({ status: "claimed", ownerId: owner.id } as Partial<typeof claws.$inferInsert>)
     .where(eq(claws.id, claw.id));
 
   const token = jwt.sign(

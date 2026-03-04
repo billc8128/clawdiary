@@ -40,7 +40,7 @@ export async function registerClaw(name: string, description?: string) {
       apiKeyHash,
       claimCode,
       description: description ?? null,
-    })
+    } as typeof claws.$inferInsert)
     .returning();
 
   return {

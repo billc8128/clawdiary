@@ -12,7 +12,7 @@ export async function syncReport(
 
   await db
     .update(reports)
-    .set({ isCurrent: false })
+    .set({ isCurrent: false } as Partial<typeof reports.$inferInsert>)
     .where(and(eq(reports.clawId, clawId), eq(reports.isCurrent, true)));
 
   const [report] = await db

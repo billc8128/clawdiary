@@ -6,3 +6,6 @@ _cr_parts/
 *.log
 .DS_Store
 drizzle/
+supabase/.temp/
+.vercel/
+.vercel
