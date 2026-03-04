@@ -1,7 +1,8 @@
-import { eq, and } from "drizzle-orm";
+import jwt from "jsonwebtoken";
+import { eq } from "drizzle-orm";
 import { getDb } from "../../db/connection.js";
-import { claws, owners, verificationCodes } from "../../db/schema.js";
-import { sendVerificationEmail } from "../auth/auth.service.js";
+import { claws, owners } from "../../db/schema.js";
+import { getEnv } from "../../config.js";
 
 export async function findClawByClaimCode(claimCode: string) {
   const db = getDb();
@@ -12,45 +13,13 @@ export async function findClawByClaimCode(claimCode: string) {
   return claw ?? null;
 }
 
-export async function sendClaimVerification(claimCode: string, email: string) {
-  const claw = await findClawByClaimCode(claimCode);
-  if (!claw) return { error: "Invalid claim code" };
-  if (claw.status !== "pending_claim") return { error: "Already claimed" };
-
-  await sendVerificationEmail(email, "claim");
-  return { success: true };
-}
-
-export async function confirmClaim(
-  claimCode: string,
-  email: string,
-  code: string
-) {
+export async function claimClaw(claimCode: string, email: string) {
   const db = getDb();
+  const env = getEnv();
 
   const claw = await findClawByClaimCode(claimCode);
   if (!claw) return { error: "Invalid claim code" };
   if (claw.status !== "pending_claim") return { error: "Already claimed" };
-
-  const [verification] = await db
-    .select()
-    .from(verificationCodes)
-    .where(
-      and(
-        eq(verificationCodes.email, email),
-        eq(verificationCodes.code, code),
-        eq(verificationCodes.purpose, "claim"),
-        eq(verificationCodes.used, false)
-      )
-    );
-
-  if (!verification) return { error: "Invalid verification code" };
-  if (new Date() > verification.expiresAt) return { error: "Code expired" };
-
-  await db
-    .update(verificationCodes)
-    .set({ used: true })
-    .where(eq(verificationCodes.id, verification.id));
 
   let [owner] = await db
     .select()
@@ -58,15 +27,7 @@ export async function confirmClaim(
     .where(eq(owners.email, email));
 
   if (!owner) {
-    [owner] = await db
-      .insert(owners)
-      .values({ email, emailVerified: true })
-      .returning();
-  } else if (!owner.emailVerified) {
-    await db
-      .update(owners)
-      .set({ emailVerified: true })
-      .where(eq(owners.id, owner.id));
+    [owner] = await db.insert(owners).values({ email }).returning();
   }
 
   await db
@@ -74,5 +35,16 @@ export async function confirmClaim(
     .set({ status: "claimed", ownerId: owner.id })
     .where(eq(claws.id, claw.id));
 
-  return { success: true, claw_name: claw.name, slug: claw.slug };
+  const token = jwt.sign(
+    { sub: owner.id, email: owner.email },
+    env.JWT_SECRET,
+    { expiresIn: "30d" }
+  );
+
+  return {
+    success: true,
+    token,
+    claw_name: claw.name,
+    slug: claw.slug,
+  };
 }

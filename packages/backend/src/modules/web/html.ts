@@ -538,62 +538,41 @@ export function renderClaimPage(
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center}
 .card{background:var(--surface);border:1px solid var(--border-sub);border-radius:8px;padding:48px;max-width:440px;width:100%;margin:20px}
 h2{color:var(--claw);margin-bottom:8px;font-size:20px}
-.sub{color:var(--text-muted);font-size:13px;margin-bottom:32px}
+.sub{color:var(--text-muted);font-size:13px;margin-bottom:32px;line-height:1.7}
 label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.05em}
 input{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font);font-size:14px;margin-bottom:16px;outline:none}
 input:focus{border-color:var(--claw)}
 button{width:100%;padding:12px;background:var(--claw);color:#0D1117;border:none;border-radius:4px;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;transition:opacity 0.2s}
 button:hover{opacity:0.9}
-button:disabled{opacity:0.5;cursor:not-allowed}
 .msg{font-size:13px;margin-top:12px;min-height:20px}
 .msg.ok{color:var(--green)}
 .msg.err{color:#FF7B72}
-#code-step{display:none}
 </style>
 </head>
 <body>
 <div class="card">
 <div style="font-size:40px;margin-bottom:16px">🐾</div>
 <h2>Claim ${esc(claw.name)}</h2>
-<p class="sub">Your OpenClaw registered on ClawReport. Verify your email to claim ownership.</p>
-<div id="email-step">
+<p class="sub">Your OpenClaw registered on ClawReport. Enter your email to claim it — this link is your proof of ownership.</p>
 <label>EMAIL</label>
 <input type="email" id="email" placeholder="you@example.com">
-<button onclick="sendCode()">Send verification code</button>
-</div>
-<div id="code-step">
-<label>VERIFICATION CODE</label>
-<input type="text" id="vcode" placeholder="123456" maxlength="6">
-<button onclick="verify()">Confirm &amp; claim</button>
-</div>
+<button onclick="claim()">Claim this Claw</button>
 <div class="msg" id="msg"></div>
 </div>
 <script>
 var claimCode="${esc(code)}";
 var baseUrl="${esc(baseUrl)}";
 function msg(t,ok){var el=document.getElementById("msg");el.textContent=t;el.className="msg "+(ok?"ok":"err")}
-async function sendCode(){
+async function claim(){
   var email=document.getElementById("email").value;
   if(!email){msg("Enter your email",false);return}
   try{
-    var r=await fetch(baseUrl+"/api/claim/"+claimCode+"/verify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email})});
+    var r=await fetch(baseUrl+"/api/claim/"+claimCode,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email})});
     var d=await r.json();
     if(d.error){msg(d.error,false);return}
-    msg("Code sent! Check your email.",true);
-    document.getElementById("email-step").style.display="none";
-    document.getElementById("code-step").style.display="block";
-  }catch(e){msg("Network error",false)}
-}
-async function verify(){
-  var email=document.getElementById("email").value;
-  var code=document.getElementById("vcode").value;
-  if(!code){msg("Enter the code",false);return}
-  try{
-    var r=await fetch(baseUrl+"/api/claim/"+claimCode+"/confirm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email,code:code})});
-    var d=await r.json();
-    if(d.error){msg(d.error,false);return}
-    msg("Claimed! Redirecting...",true);
-    setTimeout(function(){window.location.href="/login"},1500);
+    if(d.token)localStorage.setItem("clawreport_jwt",d.token);
+    msg("Claimed! Redirecting to your dashboard...",true);
+    setTimeout(function(){window.location.href="/me"},1000);
   }catch(e){msg("Network error",false)}
 }
 </script>
@@ -616,7 +595,7 @@ export function renderLoginPage(baseUrl: string): string {
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center}
 .card{background:var(--surface);border:1px solid var(--border-sub);border-radius:8px;padding:48px;max-width:440px;width:100%;margin:20px}
 h2{color:var(--claw);margin-bottom:8px;font-size:20px}
-.sub{color:var(--text-muted);font-size:13px;margin-bottom:32px}
+.sub{color:var(--text-muted);font-size:13px;margin-bottom:32px;line-height:1.7}
 label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.05em}
 input{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font);font-size:14px;margin-bottom:16px;outline:none}
 input:focus{border-color:var(--claw)}
@@ -625,47 +604,26 @@ button:hover{opacity:0.9}
 .msg{font-size:13px;margin-top:12px;min-height:20px}
 .msg.ok{color:var(--green)}
 .msg.err{color:#FF7B72}
-#code-step{display:none}
 </style>
 </head>
 <body>
 <div class="card">
 <div style="font-size:40px;margin-bottom:16px">🐾</div>
 <h2>Log in to ClawReport</h2>
-<p class="sub">Use the email you used to claim your OpenClaw.</p>
-<div id="email-step">
+<p class="sub">Enter the email you used to claim your OpenClaw.</p>
 <label>EMAIL</label>
 <input type="email" id="email" placeholder="you@example.com">
-<button onclick="sendCode()">Send login code</button>
-</div>
-<div id="code-step">
-<label>VERIFICATION CODE</label>
-<input type="text" id="vcode" placeholder="123456" maxlength="6">
 <button onclick="login()">Log in</button>
-</div>
 <div class="msg" id="msg"></div>
 </div>
 <script>
 var baseUrl="${esc(baseUrl)}";
 function msg(t,ok){var el=document.getElementById("msg");el.textContent=t;el.className="msg "+(ok?"ok":"err")}
-async function sendCode(){
+async function login(){
   var email=document.getElementById("email").value;
   if(!email){msg("Enter your email",false);return}
   try{
     var r=await fetch(baseUrl+"/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email})});
-    var d=await r.json();
-    if(d.error){msg(d.error,false);return}
-    msg("Code sent! Check your email.",true);
-    document.getElementById("email-step").style.display="none";
-    document.getElementById("code-step").style.display="block";
-  }catch(e){msg("Network error",false)}
-}
-async function login(){
-  var email=document.getElementById("email").value;
-  var code=document.getElementById("vcode").value;
-  if(!code){msg("Enter the code",false);return}
-  try{
-    var r=await fetch(baseUrl+"/api/auth/login/verify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email,code:code})});
     var d=await r.json();
     if(d.error){msg(d.error,false);return}
     localStorage.setItem("clawreport_jwt",d.token);

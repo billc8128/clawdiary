@@ -1,9 +1,8 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.string(),
   JWT_SECRET: z.string().min(16),
-  RESEND_API_KEY: z.string().optional(),
   BASE_URL: z.string().url().default("https://clawreport.club"),
   PORT: z.coerce.number().default(3000),
   NODE_ENV: z

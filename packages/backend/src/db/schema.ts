@@ -24,7 +24,6 @@ export const claws = pgTable("claws", {
 export const owners = pgTable("owners", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
-  emailVerified: boolean("email_verified").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -42,13 +41,4 @@ export const reports = pgTable("reports", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
-
-export const verificationCodes = pgTable("verification_codes", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  email: text("email").notNull(),
-  code: text("code").notNull(),
-  purpose: text("purpose").notNull(),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-  used: boolean("used").notNull().default(false),
 });
