@@ -3,8 +3,10 @@ import { getReportBySlug } from "../report/report.service.js";
 import { findClawByClaimCode } from "../claim/claim.service.js";
 import { getEnv } from "../../config.js";
 import { esc } from "./utils.js";
+import { generateOgImage } from "./og.js";
 import {
   renderReportPage,
+  renderCardPage,
   renderLandingPage,
   renderClaimPage,
   renderLoginPage,
@@ -49,10 +51,39 @@ export async function webRoutes(app: FastifyInstance) {
     reply.type("text/html").send(renderLandingPage(env.BASE_URL));
   });
 
+  app.get("/p/:slug/og.png", async (request, reply) => {
+    const { slug } = request.params as { slug: string };
+    const data = await getReportBySlug(slug);
+    if (!data) {
+      return reply.status(404).send("Not found");
+    }
+    if ((data.report as any).visibility === "private") {
+      return reply.status(404).send("Not found");
+    }
+    const reportJson = data.report.reportJson as any;
+    const hero = reportJson.heroStats || {};
+    const portrait = reportJson.ownerPortrait || {};
+    const png = await generateOgImage({
+      ownerName: hero.ownerName || "[OWNER]",
+      clawName: hero.clawName || data.claw.name,
+      headline: hero.headline || "",
+      tagline: hero.tagline || "",
+      stats: hero.stats || [],
+      collaborationLevel: portrait.collaborationLevel?.level,
+    });
+    reply
+      .type("image/png")
+      .header("Cache-Control", "public, max-age=86400, s-maxage=604800")
+      .send(png);
+  });
+
   app.get("/p/:slug", async (request, reply) => {
     const { slug } = request.params as { slug: string };
     const data = await getReportBySlug(slug);
     if (!data) {
+      return reply.status(404).type("text/html").send(render404());
+    }
+    if ((data.report as any).visibility === "private") {
       return reply.status(404).type("text/html").send(render404());
     }
     const env = getEnv();
@@ -67,6 +98,21 @@ export async function webRoutes(app: FastifyInstance) {
           env.BASE_URL
         )
       );
+  });
+
+  app.get("/p/:slug/card", async (request, reply) => {
+    const { slug } = request.params as { slug: string };
+    const data = await getReportBySlug(slug);
+    if (!data) {
+      return reply.status(404).type("text/html").send(render404());
+    }
+    if ((data.report as any).visibility === "private") {
+      return reply.status(404).type("text/html").send(render404());
+    }
+    const env = getEnv();
+    reply
+      .type("text/html")
+      .send(renderCardPage(data.claw, data.report.reportJson as any, env.BASE_URL));
   });
 
   app.get("/claim/:code", async (request, reply) => {

@@ -38,6 +38,7 @@ export const reports = pgTable("reports", {
   activityJson: jsonb("activity_json").notNull(),
   metaJson: jsonb("meta_json").notNull(),
   isCurrent: boolean("is_current").notNull().default(true),
+  visibility: text("visibility").notNull().default("public"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -5,7 +5,7 @@ import { getEnv } from "../../config.js";
 
 export async function syncReport(
   clawId: string,
-  data: { report: unknown; activity: unknown; meta: unknown }
+  data: { report: unknown; activity: unknown; meta: unknown; visibility?: string }
 ) {
   const db = getDb();
   const env = getEnv();
@@ -22,6 +22,7 @@ export async function syncReport(
       reportJson: data.report,
       activityJson: data.activity,
       metaJson: data.meta,
+      visibility: data.visibility || "public",
     })
     .returning();
 

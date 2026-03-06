@@ -2,11 +2,13 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { syncReport } from "./report.service.js";
 import { requireClawAuth } from "../auth/auth.middleware.js";
+import { reportJsonSchema } from "./report.schema.js";
 
 const syncBody = z.object({
-  report: z.record(z.unknown()).transform((v): unknown => v),
+  report: reportJsonSchema,
   activity: z.record(z.unknown()).transform((v): unknown => v),
   meta: z.record(z.unknown()).transform((v): unknown => v),
+  visibility: z.enum(["public", "unlisted", "private"]).optional(),
 });
 
 export async function reportRoutes(app: FastifyInstance) {
@@ -14,8 +16,22 @@ export async function reportRoutes(app: FastifyInstance) {
     "/sync",
     { preHandler: requireClawAuth },
     async (request, reply) => {
-      const body = syncBody.parse(request.body) as { report: unknown; activity: unknown; meta: unknown };
-      const result = await syncReport(request.claw!.id, body);
+      let body;
+      try {
+        body = syncBody.parse(request.body);
+      } catch (err) {
+        if (err instanceof z.ZodError) {
+          return reply.status(400).send({
+            error: "Invalid report data",
+            details: err.errors.map((e) => ({
+              path: e.path.join("."),
+              message: e.message,
+            })),
+          });
+        }
+        throw err;
+      }
+      const result = await syncReport(request.claw!.id, body as any);
       return result;
     }
   );

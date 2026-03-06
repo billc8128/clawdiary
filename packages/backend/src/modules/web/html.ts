@@ -107,7 +107,7 @@ section{margin-top:140px}
 .diary-type.philosophy{border-color:rgba(180,142,240,0.2);color:var(--accent-purple)}
 .diary-type.relationship{border-color:rgba(180,142,240,0.2);color:var(--accent-purple)}
 .diary-type.struggle{border-color:rgba(255,107,53,0.2);color:var(--primary)}
-.diary-title{font-size:18px;font-weight:600;margin-bottom:8px;color:var(--text-secondary)}
+.diary-title{font-size:18px;font-weight:600;margin-bottom:8px;color:var(--text-secondary);transition:color 0.15s}
 .diary-entry{font-size:15px;color:var(--text-muted);line-height:1.6}
 .achievements-grid{display:grid;gap:12px}
 .ach-item{display:flex;align-items:flex-start;gap:16px;padding:20px;background:var(--surface);border:1px solid var(--border)}
@@ -141,9 +141,31 @@ section{margin-top:140px}
 .sf-highlight{font-size:13px;color:var(--text-muted);line-height:1.5}
 .sf-powered{margin-top:24px;padding:16px 20px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-family:var(--font-mono);font-size:12px;color:var(--text-muted)}
 .sf-badge{color:var(--primary);font-weight:600}
+.collapsible .section-header{cursor:pointer}
+.collapsible .section-content{position:relative;max-height:380px;overflow:hidden;transition:max-height 0.5s ease}
+.collapsible .section-content::after{content:'';position:absolute;bottom:0;left:0;right:0;height:120px;background:linear-gradient(to bottom,transparent,var(--bg));pointer-events:none;transition:opacity 0.3s}
+.collapsible:hover .section-content{max-height:5000px}
+.collapsible:hover .section-content::after{opacity:0}
+.diary-entry{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;transition:all 0.3s ease}
+.diary-item:hover .diary-entry{-webkit-line-clamp:unset;color:var(--text-secondary)}
+.diary-item:hover .diary-title{color:var(--text)}
+.diary-expand{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:8px;transition:opacity 0.2s}
+.diary-item:hover .diary-expand{opacity:0}
 .footer{margin-top:140px;padding:48px 0;border-top:1px solid var(--border);text-align:center}
 .footer .label{opacity:0.3}
 @media(max-width:600px){.hero h1{font-size:36px}.hero-stats{grid-template-columns:repeat(2,1fr)}.stat-cell{padding:20px 16px}.stat-value{font-size:28px}.letter-wrap{padding:32px 24px}.thinking-block{padding:28px}section{margin-top:100px}}
+.share-bar{position:fixed;top:50%;right:20px;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:50}
+.share-btn{width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:border-color 0.2s,background 0.2s;color:var(--text-muted)}
+.share-btn:hover{border-color:var(--primary-border);color:var(--primary);background:var(--primary-dim)}
+.share-btn svg{width:18px;height:18px;fill:currentColor}
+.share-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--primary-border);color:var(--primary);padding:10px 24px;font-size:13px;font-family:var(--font-mono);border-radius:4px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:100}
+.share-toast.show{opacity:1}
+@media(max-width:768px){.share-bar{position:fixed;top:auto;bottom:0;left:0;right:0;transform:none;flex-direction:row;justify-content:center;padding:12px;background:var(--bg);border-top:1px solid var(--border)}.share-btn{width:44px;height:44px}}
+.cta-section{margin-top:100px;padding:48px 32px;background:var(--surface);border:1px solid var(--border);text-align:center}
+.cta-title{font-size:24px;font-weight:700;margin-bottom:12px;letter-spacing:-0.02em}
+.cta-desc{font-size:15px;color:var(--text-secondary);margin-bottom:28px}
+.cta-btn{display:inline-block;padding:14px 36px;background:var(--primary);color:#050507;font-size:15px;font-weight:700;border-radius:4px;letter-spacing:-0.01em;transition:opacity 0.2s}
+.cta-btn:hover{opacity:0.9}
 `;
 
 // ─── TypeScript Interfaces ───
@@ -308,7 +330,11 @@ export function renderReportPage(
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:type" content="profile">
 <meta property="og:url" content="${esc(baseUrl)}/p/${esc(claw.slug)}">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
+<meta property="og:image" content="${esc(baseUrl)}/p/${esc(claw.slug)}/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="${esc(baseUrl)}/p/${esc(claw.slug)}/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..800&family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&display=swap" rel="stylesheet">
@@ -326,8 +352,30 @@ ${renderAchievements(report.achievements)}
 ${renderLetter(report.letterToOwner)}
 ${renderRoutines(report.autonomousRoutines)}
 ${renderSkills(report.skillFootprint, hero.clawName || claw.name)}
-<footer class="footer"><div class="label">ClawDiary — Field Report / End</div></footer>
+<div class="cta-section" id="cta">
+<div class="cta-title">Want to know what your AI thinks of you?</div>
+<p class="cta-desc">Let your AI write a field report about you. It takes 2 minutes.</p>
+<a href="/" class="cta-btn">Get My Report</a>
 </div>
+<footer class="footer"><div class="label">ClawDiary — Field Report</div></footer>
+</div>
+<div class="share-bar">
+<button class="share-btn" onclick="shareLink()" title="Copy link"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
+<button class="share-btn" onclick="shareTwitter()" title="Share on X/Twitter"><svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></button>
+<button class="share-btn" onclick="shareLinkedIn()" title="Share on LinkedIn"><svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></button>
+</div>
+<div class="share-toast" id="shareToast"></div>
+<script>
+var reportUrl="${esc(baseUrl)}/p/${esc(claw.slug)}";
+var shareText="${esc((hero.headline || '').replace(/"/g, ''))} — see what my AI thinks of me";
+function showToast(t){var el=document.getElementById("shareToast");el.textContent=t;el.classList.add("show");setTimeout(function(){el.classList.remove("show")},2000)}
+function shareLink(){if(navigator.share){navigator.share({title:document.title,url:reportUrl}).catch(function(){})}else{navigator.clipboard.writeText(reportUrl).then(function(){showToast("Link copied!")}).catch(function(){showToast("Failed to copy")})}}
+function shareTwitter(){window.open("https://x.com/intent/tweet?text="+encodeURIComponent(shareText)+"&url="+encodeURIComponent(reportUrl),"_blank","width=550,height=420")}
+function shareLinkedIn(){window.open("https://www.linkedin.com/sharing/share-offsite/?url="+encodeURIComponent(reportUrl),"_blank","width=550,height=420")}
+if(localStorage.getItem("clawdiary_jwt")){var cta=document.getElementById("cta");if(cta)cta.style.display="none"}
+document.querySelectorAll(".collapsible").forEach(function(s){var c=s.querySelector(".section-content");if(c&&c.scrollHeight<=380)s.classList.remove("collapsible")});
+document.querySelectorAll(".diary-item").forEach(function(item){var e=item.querySelector(".diary-entry");var h=item.querySelector(".diary-expand");if(e&&e.scrollHeight<=e.clientHeight+2){e.style.webkitLineClamp="unset";e.style.overflow="visible";if(h)h.style.display="none"}});
+</script>
 </body>
 </html>`;
 }
@@ -526,7 +574,7 @@ function renderDiary(entries?: DiaryEntry[]): string {
   const html = entries
     .map(
       (d) =>
-        `<div class="diary-item"><div class="diary-meta"><span class="diary-date">${esc(d.date)}</span><span class="diary-type ${d.type || ""}">${esc(d.type || "")}</span></div><h3 class="diary-title">${esc(d.title)}</h3><div class="diary-entry">${nl2br(d.entry)}</div></div>`
+        `<div class="diary-item"><div class="diary-meta"><span class="diary-date">${esc(d.date)}</span><span class="diary-type ${d.type || ""}">${esc(d.type || "")}</span></div><h3 class="diary-title">${esc(d.title)}</h3><div class="diary-entry">${nl2br(d.entry)}</div><div class="diary-expand">展开 ...</div></div>`
     )
     .join("");
 
@@ -577,9 +625,9 @@ function renderRoutines(routines?: AutonomousRoutine[]): string {
     )
     .join("");
 
-  return `<section>
+  return `<section class="collapsible">
 <div class="section-header"><span class="label">Autonomous Routines</span><span class="section-number mono">${routines.length} jobs</span></div>
-<div class="sf-grid">${html}</div>
+<div class="section-content"><div class="sf-grid">${html}</div></div>
 </section>`;
 }
 
@@ -599,10 +647,10 @@ function renderSkills(sf?: SkillFootprint, clawName?: string): string {
 
   const totalCalls = tools.reduce((s, t) => s + (t.count || 0), 0);
 
-  return `<section>
+  return `<section class="collapsible">
 <div class="section-header"><span class="label">OpenClaw Skills</span><span class="section-number mono">${totalCalls > 0 ? totalCalls.toLocaleString() + "+ calls · " : ""}${featured.length + tools.length} skills</span></div>
-<div class="sf-grid">${html}</div>
-${clawName ? `<div class="sf-powered"><span>Powered by <span class="sf-badge">OpenClaw</span> · Agent: ${esc(clawName)}</span></div>` : ""}
+<div class="section-content"><div class="sf-grid">${html}</div>
+${clawName ? `<div class="sf-powered"><span>Powered by <span class="sf-badge">OpenClaw</span> · Agent: ${esc(clawName)}</span></div>` : ""}</div>
 </section>`;
 }
 
@@ -893,6 +941,79 @@ function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").
 function logout(){localStorage.removeItem("clawdiary_jwt");window.location.href="/login"}
 load();
 </script>
+</body>
+</html>`;
+}
+
+// ─── Share card page renderer ───
+
+export function renderCardPage(
+  claw: { name: string; slug: string },
+  report: ReportJson,
+  baseUrl: string
+): string {
+  const hero = report.heroStats || {};
+  const ownerName = hero.ownerName || "[OWNER]";
+  const clawName = hero.clawName || claw.name;
+  const portrait = report.ownerPortrait || {};
+  const showcase = (report.showcase || [])[0];
+  const collab = portrait.collaborationLevel;
+  const stats = (hero.stats || []).slice(0, 4);
+
+  const statsHtml = stats.map((s, i) =>
+    `<div class="card-stat"><div class="card-stat-value" style="color:${STAT_COLORS[i % 4]}">${esc(s.value)}</div><div class="card-stat-label">${esc(s.label)}</div></div>`
+  ).join("");
+
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(ownerName)} × ${esc(clawName)} — ClawDiary Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#050507;--surface:#0D0D10;--border:#232328;--primary:#FF6B35;--primary-dim:rgba(255,107,53,0.08);--secondary:#56D4DD;--text:#EEEEF0;--text-secondary:#A0A0A8;--text-muted:#68686F;--text-dim:#404048;--accent-gold:#D4A843;--accent-purple:#B48EF0;--accent-blue:#5B8DEF}
+body{background:var(--bg);color:var(--text);font-family:"Inter",system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{max-width:480px;width:100%;background:var(--surface);border:1px solid var(--border);padding:48px 40px;position:relative}
+.card-eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--primary);letter-spacing:0.12em;font-weight:500;margin-bottom:20px}
+.card-duo{display:flex;align-items:baseline;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.card-owner{font-size:20px;font-weight:800;letter-spacing:-0.02em}
+.card-x{font-size:16px;color:var(--text-dim);font-weight:300}
+.card-agent{font-size:17px;font-weight:600;color:var(--text-secondary)}
+.card-headline{font-size:32px;font-weight:800;letter-spacing:-0.035em;line-height:1.1;margin-bottom:12px}
+.card-tagline{font-size:14px;color:var(--text-secondary);line-height:1.55;margin-bottom:28px}
+.card-stats{display:grid;grid-template-columns:repeat(${stats.length},1fr);gap:1px;background:var(--border);margin-bottom:28px;border:1px solid var(--border)}
+.card-stat{background:var(--bg);padding:16px 12px;text-align:center}
+.card-stat-value{font-size:24px;font-weight:700;font-family:"JetBrains Mono",monospace;line-height:1;margin-bottom:4px}
+.card-stat-label{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.12em;font-family:"JetBrains Mono",monospace}
+.card-showcase{background:var(--primary-dim);border-left:3px solid var(--primary);padding:16px 20px;margin-bottom:28px}
+.card-showcase-title{font-size:14px;font-weight:700;margin-bottom:6px}
+.card-showcase-sowhat{font-size:13px;color:var(--text-secondary);line-height:1.5}
+.card-collab{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--secondary);margin-bottom:28px}
+.card-footer{display:flex;justify-content:space-between;align-items:center;padding-top:20px;border-top:1px solid var(--border)}
+.card-footer-brand{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--text-muted)}
+.card-footer-cta{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--text-dim)}
+.view-full{display:block;text-align:center;margin-top:24px;font-size:13px;color:var(--primary);text-decoration:none}
+.view-full:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div>
+<div class="card">
+<div class="card-eyebrow">CLAWDIARY — FIELD REPORT</div>
+<div class="card-duo"><span class="card-owner">${esc(ownerName)}</span><span class="card-x">×</span><span class="card-agent">${esc(clawName)}</span></div>
+<h1 class="card-headline">${esc(hero.headline || "")}</h1>
+<p class="card-tagline">${esc(hero.tagline || "")}</p>
+${statsHtml ? `<div class="card-stats">${statsHtml}</div>` : ""}
+${showcase ? `<div class="card-showcase"><div class="card-showcase-title">${esc(showcase.title)}</div><div class="card-showcase-sowhat">${esc(showcase.soWhat)}</div></div>` : ""}
+${collab?.level ? `<div class="card-collab">Collaboration: ${esc(collab.level)} — ${esc(collab.label || "")}</div>` : ""}
+<div class="card-footer"><span class="card-footer-brand">clawdiary.ai</span><span class="card-footer-cta">get your own report</span></div>
+</div>
+<a href="${esc(baseUrl)}/p/${esc(claw.slug)}" class="view-full">View full report</a>
+</div>
 </body>
 </html>`;
 }

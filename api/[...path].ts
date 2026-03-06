@@ -22,11 +22,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     else if (Array.isArray(val)) headers[key] = val.join(", ");
   }
 
+  // Vercel auto-parses JSON bodies, so re-serialize and fix content-length
+  let payload: string | undefined;
+  if (req.body != null) {
+    payload = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+    headers["content-length"] = Buffer.byteLength(payload).toString();
+  } else {
+    delete headers["content-length"];
+  }
+
   const response = await fastify.inject({
     method,
     url,
     headers,
-    payload: req.body ? JSON.stringify(req.body) : undefined,
+    payload,
   });
 
   res.status(response.statusCode);
