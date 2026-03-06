@@ -601,25 +601,46 @@ print(f"Compressed {len(sessions)} sessions to _cr_parts/compressed/")
 PYEOF
 ```
 
-### 3b. Check for USER.md (optional identity input)
+### 3b. Scan workspace for owner context
 
-If the user has a `USER.md` file, read it — this provides reliable identity information for the `identityCard` block.
+Scan the workspace directory tree to discover files that reveal who the owner is — personality, memory, identity, settings, project docs, etc. This is richer signal than conversation alone.
 
 ```bash
-USER_MD=""
-for p in "./USER.md" "$HOME/USER.md" "$HOME/.openclaw/USER.md" "$HOME/.claude/USER.md"; do
-  if [ -f "$p" ]; then
-    USER_MD="$p"
-    echo "Found USER.md at $p"
-    break
+echo "=== Scanning workspace for owner context ==="
+
+# Scan common config directories
+for dir in \
+  "$HOME/.openclaw" \
+  "$HOME/.claude" \
+  "$HOME/.claude/projects" \
+  "$PWD/settings" \
+  "$PWD"; do
+  if [ -d "$dir" ]; then
+    echo "--- $dir ---"
+    find "$dir" -maxdepth 3 -type f \( \
+      -name "*.md" -o -name "*.txt" -o -name "*.json" \
+    \) ! -path "*/node_modules/*" ! -path "*/.git/*" ! -path "*/sessions/*" \
+      ! -path "*/_cr_parts/*" ! -path "*/compressed/*" \
+      2>/dev/null | head -50
   fi
 done
-if [ -z "$USER_MD" ]; then
-  echo "No USER.md found (identityCard will be inferred from conversations)"
-fi
 ```
 
-If found, read it with the Read tool. The content provides baseline facts for `identityCard`.
+Review the file list output. **Read any file that looks like it contains owner context.** Prioritize:
+
+- Identity/personality files: `SOUL.md`, `IDENTITY.md`, `USER.md`, `MEMORY.md`, `HEARTBEAT.md`
+- Settings and preferences: `AGENTS.md`, `TOOLS.md`, config files
+- Memory/journal files: `memory/*.md`, diary entries, daily logs
+- Project docs: `README.md`, `CLAUDE.md`, project descriptions
+
+**Read as many relevant files as you find.** Don't limit yourself to a predefined list — different users organize their workspace differently. The goal is to understand:
+
+1. **Who is the owner** — background, career, personality traits, values
+2. **How do they work** — tools, workflows, habits, energy patterns
+3. **What do they care about** — goals, projects, interests, taste
+4. **What makes them unique** — quirks, strengths, blind spots
+
+This context directly enriches `identityCard`, `ownerPortrait`, `showcase`, and `letterToOwner`. Conversation data alone misses the bigger picture.
 
 ### 3c. Read compressed sessions
 
