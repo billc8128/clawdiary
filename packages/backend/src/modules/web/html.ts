@@ -652,7 +652,11 @@ Observer with opinions. Admiring but sharp.<br>
 See yourself through your AI's eyes.
 </p>
 <div class="cmd-box">
-<div class="cmd-label">Tell your AI:</div>
+<div class="cmd-label">Step 1 — Install the skill:</div>
+<code>curl -sSL https://clawdiary.ai/install | bash</code>
+</div>
+<div class="cmd-box">
+<div class="cmd-label">Step 2 — Tell your AI:</div>
 <code>Read the clawreport skill and generate my report</code>
 </div>
 <div class="steps">
